@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <map>
 #include <list>
+#include <mutex>
+#include <thread>
 #include "constant.h"
 
 using namespace std;
@@ -42,4 +44,7 @@ private:
     int used=0;
     BlockVector block_map;
     list<int> unused_key;
+
+private:
+    std::mutex mt;
 };

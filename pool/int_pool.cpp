@@ -34,6 +34,7 @@ IntPool::~IntPool() {
 
 Block* IntPool::get() {
 
+    std::lock_guard<std::mutex> lck(mt);
     //如果unused不为空，直接分配一个
     if (unused_key.size() > 0) {
         int key = unused_key.front();
@@ -42,15 +43,16 @@ Block* IntPool::get() {
         used++;
         return &block;
     }
+
     //达到分配定额，则返回nullptr
     if (allocate >= total_allocate){
-        cout << "run out of memory" << endl;
+//        cout << "run out of memory" << endl;
         return nullptr;
     }
     //继续分配内存
     int left = total_allocate - allocate;
     int cur_allocate = left < ALLOCATE_SIZE_PERTIME?left:ALLOCATE_SIZE_PERTIME;
-    cout << "reallocate num: " << cur_allocate << endl;
+    cout << "reallocate num: " << cur_allocate << " threadid is : " << std::this_thread::get_id()<<endl;
     int i=allocate;
     for( ; i<allocate+cur_allocate-1; i++) {
         Block block;
@@ -60,6 +62,7 @@ Block* IntPool::get() {
         block_map[i] = block;
     }
     allocate = allocate + cur_allocate;
+    cout << "current allocate is : " << allocate << endl;
     //留下一个空位返回
     Block block;
     block.index = i;
@@ -71,6 +74,7 @@ Block* IntPool::get() {
 
 void IntPool::release(Block block) {
 
+    std::lock_guard<std::mutex> lck(mt);
     int id = block.index;
     memset(block.value, 0, block_size);
     used--;

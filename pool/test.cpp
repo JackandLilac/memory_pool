@@ -4,12 +4,15 @@
 #include <iostream>
 #include <memory>
 #include <string.h>
+#include <thread>
+#include <time.h>
 #include "stdlib.h"
 #include "int_pool.h"
 
 using namespace std;
 
 #define DATA_BLOCK_LEN 50
+#define THREAD_NUM 15
 
 struct sTest{
     int m_id;
@@ -105,8 +108,16 @@ void printInfo(IntPool* intPool) {
     cout << "myPool1 used block num = " << intPool->get_used() << endl;
 }
 
-void copy(){
-
+void test_insert(IntPool* intPool){
+    for(int i=0; i<1000000;i++) {
+        Block *pi = intPool->get();
+        if(pi == nullptr){
+            continue;
+        }
+        if(i %10 == 0) {
+            intPool->release(*pi);
+        }
+    }
 }
 
 void test_int_pool(){
@@ -129,15 +140,17 @@ void test_int_pool(){
     print(block.value);
     intPool.release(block);
     print(block.value);
-    for(int i=0; i<10000000;i++) {
-        Block *pi = intPool.get();
-        if(pi == nullptr){
-            continue;
-        }
-        if(i %10 == 0){
-            intPool.release(*pi);
-        }
+
+    thread ts[THREAD_NUM];
+    clock_t start = clock();
+    for(int i=0; i<THREAD_NUM; i++){
+        ts[i] = thread(test_insert, &intPool);
     }
+    for(int i=0; i<THREAD_NUM; i++){
+        ts[i].join();
+    }
+    clock_t end = clock();
+    cout << "time cost : " << (end - start) <<endl;
 }
 
 int main()
